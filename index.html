@@ -10,80 +10,72 @@
 body {
     margin: 0;
     background: #0b0b0c;
-    color: white;
     font-family: Arial, sans-serif;
+    color: white;
 }
 
-.header {
-    padding: 15px 20px;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.ticker-container {
-    padding: 10px;
-}
-
-.info {
+h1 {
     padding: 20px;
-    color: #aaa;
-    font-size: 14px;
+    margin: 0;
+}
+
+.wrapper {
+    padding: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-    Futures Market Overview
-</div>
+<h1>Futures Dashboard</h1>
 
-<div class="ticker-container">
+<div class="wrapper">
+
     <!-- TradingView Widget BEGIN -->
     <div class="tradingview-widget-container">
         <div class="tradingview-widget-container__widget"></div>
 
-        <script
-            type="text/javascript"
-            src="https://s3.tradingview.com/external-embedding/[
-                {
-                    "description": "Dow Futures",
-                    "proName": "CBOT_MINI:YM1!"
-                },
-                {
-                    "description": "S&P 500 Futures",
-                    "proName": "CME_MINI:ES1!"
-                },
-                {
-                    "description": "Nasdaq Futures",
-                    "proName": "CME_MINI:NQ1!"
-                },
-                {
-                    "description": "Gold",
-                    "proName": "COMEX:GC1!"
-                },
-                {
-                    "description": "Silver",
-                    "proName": "COMEX:SI1!"
-                },
-                {
-                    "description": "Crude Oil",
-                    "proName": "NYMEX:CL1!"
-                }
-            ],
-            "showSymbolLogo": true,
-            "colorTheme": "dark",
-            "isTransparent": false,
-            "displayMode": "adaptive",
-            "locale": "en"
+        <script type="text/javascript"
+        src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js"
+        async>
+        {
+          "symbols": [
+            {
+              "description": "Dow Futures",
+              "proName": "CBOT_MINI:YM1!"
+            },
+            {
+              "description": "S&P 500 Futures",
+              "proName": "CME_MINI:ES1!"
+            },
+            {
+              "description": "Nasdaq Futures",
+              "proName": "CME_MINI:NQ1!"
+            },
+            {
+              "description": "Gold",
+              "proName": "COMEX:GC1!"
+            },
+            {
+              "description": "Silver",
+              "proName": "COMEX:SI1!"
+            },
+            {
+              "description": "Crude Oil",
+              "proName": "NYMEX:CL1!"
+            }
+          ],
+          "showSymbolLogo": true,
+          "colorTheme": "dark",
+          "isTransparent": false,
+          "displayMode": "adaptive",
+          "locale": "en"
         }
         </script>
+
     </div>
     <!-- TradingView Widget END -->
-</div>
 
-<div class="info">
-    Live futures pricing and market movement.
 </div>
 
 </body>
