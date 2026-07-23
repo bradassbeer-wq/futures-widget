@@ -1,12 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Market Dashboard</title>
+
+<style>
+
+body{
+    margin:0;
+    background:#0d1117;
+    color:white;
+    font-family:Segoe UI,Arial,sans-serif;
+}
+
+.header{
+    padding:20px;
+    font-size:36px;
+    font-weight:bold;
+    border-bottom:1px solid #30363d;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead{
+    background:#161b22;
+}
+
+th{
+    padding:18px;
+    color:#8b949e;
+    text-align:right;
+}
+
+th:first-child,
+th:nth-child(2){
+    text-align:left;
+}
+
+td{
+    padding:20px;
+    font-size:24px;
+    border-top:1px solid #30363d;
+}
+
+.market{
+    font-weight:bold;
+}
+
+.right{
+    text-align:right;
+}
+
+.up{
+    color:#3fb950;
+}
+
+.down{
+    color:#f85149;
+}
+
+.status{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    padding:10px;
+    background:#161b22;
+    border-top:1px solid #30363d;
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="header">
+Market Dashboard
+</div>
+
+<table>
+
+<thead>
+<tr>
+    <th></th>
+    <th>Market</th>
+    <th>Index Est.</th>
+    <th>ETF Price</th>
+    <th>Change</th>
+    <th>% Change</th>
+</tr>
+</thead>
+
+<tbody id="marketData">
+</tbody>
+
+</table>
+
+<div class="status" id="lastUpdate">
+Connecting...
+</div>
+
 <script>
 
 document.addEventListener("DOMContentLoaded", () => {
 
 const API_KEY =
 "d9h3rhhr01qhv00kl4vgd9h3rhhr01qhv00kl500";
-
-let rateLimited = false;
-let retryAfter = 0;
 
 const markets = [
 
@@ -69,23 +173,19 @@ markets.forEach(market => {
             ${market.name}
         </td>
 
-        <td class="right"
-            id="${market.id}-index">
+        <td class="right" id="${market.id}-index">
             --
         </td>
 
-        <td class="right"
-            id="${market.id}-etf">
+        <td class="right" id="${market.id}-etf">
             --
         </td>
 
-        <td class="right"
-            id="${market.id}-change">
+        <td class="right" id="${market.id}-change">
             --
         </td>
 
-        <td class="right"
-            id="${market.id}-pct">
+        <td class="right" id="${market.id}-pct">
             --
         </td>
     `;
@@ -95,12 +195,6 @@ markets.forEach(market => {
 });
 
 async function updateMarkets(){
-
-    if(rateLimited &&
-       Date.now() < retryAfter){
-
-        return;
-    }
 
     for(const market of markets){
 
@@ -114,37 +208,9 @@ async function updateMarkets(){
             const data =
             await response.json();
 
-            if(data.error){
-
-                console.log(data.error);
-
-                if(
-                    data.error.toLowerCase()
-                    .includes("limit")
-                ){
-
-                    rateLimited = true;
-
-                    retryAfter =
-                    Date.now() +
-                    60000;
-
-                    document
-                    .getElementById(
-                        "lastUpdate"
-                    ).innerHTML =
-                    "⚠ API limit reached - retrying in 60 seconds";
-
-                    return;
-                }
-
-                continue;
-            }
-
             if(
-                data.c == null ||
-                data.d == null ||
-                data.dp == null
+                !data ||
+                data.c == null
             ){
                 continue;
             }
@@ -166,9 +232,7 @@ async function updateMarkets(){
             change >= 0;
 
             const color =
-            positive
-                ? "up"
-                : "down";
+            positive ? "up" : "down";
 
             document.getElementById(
                 `${market.id}-arrow`
@@ -183,13 +247,7 @@ async function updateMarkets(){
             document.getElementById(
                 `${market.id}-index`
             ).textContent =
-            indexPrice.toLocaleString(
-                undefined,
-                {
-                    minimumFractionDigits:2,
-                    maximumFractionDigits:2
-                }
-            );
+            indexPrice.toLocaleString();
 
             document.getElementById(
                 `${market.id}-index`
@@ -227,20 +285,18 @@ async function updateMarkets(){
             `right ${color}`;
 
         }
-        catch(error){
+        catch(err){
 
-            console.error(error);
+            console.log(err);
 
         }
     }
 
     document.getElementById(
         "lastUpdate"
-    ).innerHTML =
-    "Last Updated: " +
-    new Date()
-    .toLocaleTimeString();
-
+    ).textContent =
+        "Last Updated: " +
+        new Date().toLocaleTimeString();
 }
 
 updateMarkets();
@@ -253,3 +309,6 @@ setInterval(
 });
 
 </script>
+
+</body>
+</html>
