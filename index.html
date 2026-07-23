@@ -1,185 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Brad's Market Dashboard</title>
-
-<style>
-
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
-
-body{
-    background:#0d1117;
-    color:#e6edf3;
-    font-family:'Segoe UI',sans-serif;
-    overflow-x:hidden;
-}
-
-.market-box{
-    width:100vw;
-    min-height:100vh;
-    background:#161b22;
-}
-
-.tabs{
-    display:flex;
-    gap:30px;
-    padding:20px 30px;
-    background:#0d1117;
-    border-bottom:1px solid #30363d;
-}
-
-.tab{
-    color:#8b949e;
-    font-size:22px;
-    font-weight:600;
-}
-
-.active{
-    color:#ffffff;
-    border-bottom:3px solid #58a6ff;
-    padding-bottom:8px;
-}
-
-table{
-    width:100%;
-    border-collapse:collapse;
-}
-
-thead{
-    background:#21262d;
-}
-
-th{
-    padding:20px;
-    text-align:right;
-    font-size:20px;
-    color:#8b949e;
-    border-bottom:1px solid #30363d;
-}
-
-th:first-child,
-th:nth-child(2){
-    text-align:left;
-}
-
-td{
-    padding:24px 20px;
-    font-size:32px;
-    border-bottom:1px solid #21262d;
-    transition:
-        color .3s ease,
-        background-color .3s ease;
-}
-
-tr:hover{
-    background:#1c2128;
-}
-
-.market-name{
-    font-weight:600;
-}
-
-.right{
-    text-align:right;
-}
-
-.up{
-    color:#3fb950;
-    font-weight:bold;
-}
-
-.down{
-    color:#f85149;
-    font-weight:bold;
-}
-
-.flash-up{
-    animation:flashUp .7s;
-}
-
-.flash-down{
-    animation:flashDown .7s;
-}
-
-@keyframes flashUp{
-    from{
-        background:#3fb95044;
-    }
-    to{
-        background:transparent;
-    }
-}
-
-@keyframes flashDown{
-    from{
-        background:#f8514944;
-    }
-    to{
-        background:transparent;
-    }
-}
-
-.status-bar{
-    position:fixed;
-    left:0;
-    right:0;
-    bottom:0;
-    background:#0d1117;
-    border-top:1px solid #30363d;
-    padding:12px 20px;
-    color:#8b949e;
-    font-size:14px;
-}
-
-</style>
-</head>
-
-<body>
-
-<div class="market-box">
-
-<div class="tabs">
-    <div class="tab active">US</div>
-    <div class="tab">EUROPE</div>
-    <div class="tab">ASIA</div>
-    <div class="tab">FX</div>
-    <div class="tab">RATES</div>
-    <div class="tab">FUTURES</div>
-</div>
-
-<table>
-
-<thead>
-<tr>
-    <th></th>
-    <th>MARKET</th>
-    <th>PRICE</th>
-    <th>CHANGE</th>
-    <th>% CHANGE</th>
-</tr>
-</thead>
-
-<tbody id="marketData">
-</tbody>
-
-</table>
-
-</div>
-
-<div id="lastUpdate" class="status-bar">
-Connecting...
-</div>
-
 <script>
 
-const API_KEY = "REPLACE_WITH_YOUR_NEW_FINNHUB_KEY";
+const API_KEY = "d9h3rhhr01qhv00kl4vgd9h3rhhr01qhv00kl500";
+
+let rateLimited = false;
+let retryAfter = 0;
 
 const markets = [
     { id:"dow",    name:"Dow",     symbol:"DIA" },
@@ -196,12 +20,12 @@ function createRows(){
 
     markets.forEach(market=>{
 
-        const row=document.createElement("tr");
+        const row = document.createElement("tr");
 
-        row.innerHTML=`
-            <td id="${market.id}-arrow">-</td>
+        row.innerHTML = `
+            <td id="${market.id}-arrow">•</td>
             <td class="market-name">${market.name}</td>
-            <td class="right" id="${market.id}-price">--</td>
+            <td class="right" id="${market.id}-price">Loading...</td>
             <td class="right" id="${market.id}-change">--</td>
             <td class="right" id="${market.id}-pct">--</td>
         `;
@@ -214,33 +38,34 @@ function createRows(){
 
 function flashPrice(cell,newPrice){
 
-    const oldPrice=parseFloat(cell.textContent);
+    const oldPrice = parseFloat(cell.textContent);
 
-    if(!isNaN(oldPrice)){
+    if(isNaN(oldPrice)) return;
 
-        if(newPrice>oldPrice){
+    if(newPrice > oldPrice){
 
-            cell.classList.add("flash-up");
+        cell.classList.add("flash-up");
 
-            setTimeout(()=>{
-                cell.classList.remove("flash-up");
-            },700);
+        setTimeout(()=>{
+            cell.classList.remove("flash-up");
+        },700);
+    }
 
-        }
+    if(newPrice < oldPrice){
 
-        if(newPrice<oldPrice){
+        cell.classList.add("flash-down");
 
-            cell.classList.add("flash-down");
-
-            setTimeout(()=>{
-                cell.classList.remove("flash-down");
-            },700);
-
-        }
+        setTimeout(()=>{
+            cell.classList.remove("flash-down");
+        },700);
     }
 }
 
 async function updateMarkets(){
+
+    if(rateLimited && Date.now() < retryAfter){
+        return;
+    }
 
     for(const market of markets){
 
@@ -252,20 +77,43 @@ async function updateMarkets(){
 
             const data = await response.json();
 
+            console.log(market.symbol,data);
+
+            if(data.error){
+
+                if(
+                    data.error.toLowerCase().includes("limit") ||
+                    data.error.toLowerCase().includes("rate")
+                ){
+
+                    rateLimited = true;
+                    retryAfter = Date.now() + 60000;
+
+                    document.getElementById("lastUpdate").innerHTML =
+                        "⚠ API Limit Reached - Retrying in 60 Seconds";
+
+                    return;
+                }
+
+                throw new Error(data.error);
+            }
+
+            rateLimited = false;
+
             const price =
-                Number(data.c);
+                typeof data.c === "number"
+                ? data.c
+                : null;
 
             const change =
-                Number(data.d);
+                typeof data.d === "number"
+                ? data.d
+                : null;
 
             const percent =
-                Number(data.dp);
-
-            const positive =
-                change >= 0;
-
-            const color =
-                positive ? "up" : "down";
+                typeof data.dp === "number"
+                ? data.dp
+                : null;
 
             const arrowCell =
                 document.getElementById(`${market.id}-arrow`);
@@ -278,6 +126,27 @@ async function updateMarkets(){
 
             const pctCell =
                 document.getElementById(`${market.id}-pct`);
+
+            if(
+                price === null ||
+                change === null ||
+                percent === null
+            ){
+
+                arrowCell.textContent = "•";
+                arrowCell.className = "";
+
+                priceCell.textContent = "--";
+                changeCell.textContent = "--";
+                pctCell.textContent = "--";
+
+                continue;
+            }
+
+            const positive = change >= 0;
+
+            const color =
+                positive ? "up" : "down";
 
             flashPrice(priceCell,price);
 
@@ -310,26 +179,32 @@ async function updateMarkets(){
 
             console.error(error);
 
+            document.getElementById(
+                `${market.id}-price`
+            ).textContent = "--";
+
+            document.getElementById(
+                `${market.id}-change`
+            ).textContent = "--";
+
+            document.getElementById(
+                `${market.id}-pct`
+            ).textContent = "--";
         }
     }
 
     document.getElementById("lastUpdate").innerHTML =
         "Last Updated: " +
         new Date().toLocaleTimeString([],{
-            hour:'2-digit',
-            minute:'2-digit',
-            second:'2-digit'
+            hour:"2-digit",
+            minute:"2-digit",
+            second:"2-digit"
         });
-
 }
 
 createRows();
 updateMarkets();
 
-// Refresh every 5 seconds
 setInterval(updateMarkets,5000);
 
 </script>
-
-</body>
-</html>
