@@ -4,34 +4,48 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Market Dashboard</title>
+<title>Brad's Market Dashboard</title>
 
 <style>
 
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
 body{
-    font-family: Arial, Helvetica, sans-serif;
-    background:#f5f5f5;
-    margin:20px;
+    background:#0d1117;
+    color:#e6edf3;
+    font-family:Segoe UI, Arial, sans-serif;
+    height:100vh;
 }
 
 .market-box{
-    width:360px;
-    background:#fff;
-    border:1px solid #d8d8d8;
+    width:100vw;
+    min-height:100vh;
+    background:#161b22;
 }
 
 .tabs{
     display:flex;
-    gap:12px;
-    padding:8px 10px;
-    background:#f0f0f0;
-    border-bottom:1px solid #d8d8d8;
-    font-weight:bold;
-    font-size:13px;
+    gap:30px;
+    padding:20px 30px;
+    background:#0d1117;
+    border-bottom:1px solid #30363d;
+    font-size:20px;
+    font-weight:600;
 }
 
-.tabs span:first-child{
-    border-bottom:2px solid #000;
+.tab{
+    cursor:pointer;
+    color:#8b949e;
+}
+
+.tab.active{
+    color:#ffffff;
+    border-bottom:3px solid #58a6ff;
+    padding-bottom:8px;
 }
 
 table{
@@ -39,40 +53,61 @@ table{
     border-collapse:collapse;
 }
 
-th{
-    padding:8px 6px;
-    font-size:12px;
-    color:#444;
-    text-align:right;
+thead{
+    background:#21262d;
 }
 
-th:nth-child(1),
+th{
+    padding:18px;
+    text-align:right;
+    font-size:18px;
+    color:#8b949e;
+    border-bottom:1px solid #30363d;
+}
+
+th:first-child,
 th:nth-child(2){
     text-align:left;
 }
 
 td{
-    padding:8px 6px;
-    border-top:1px solid #e5e5e5;
-    font-size:14px;
+    padding:22px 18px;
+    font-size:28px;
+    border-bottom:1px solid #21262d;
 }
 
-tr:nth-child(even){
-    background:#f4f4f4;
+tr:hover{
+    background:#1c2128;
 }
 
 .up{
-    color:#0f9d58;
+    color:#3fb950;
     font-weight:bold;
 }
 
 .down{
-    color:#d93025;
+    color:#f85149;
     font-weight:bold;
+}
+
+.market-name{
+    font-weight:600;
 }
 
 .right{
     text-align:right;
+}
+
+.status-bar{
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    padding:12px 20px;
+    background:#0d1117;
+    border-top:1px solid #30363d;
+    color:#8b949e;
+    font-size:14px;
 }
 
 </style>
@@ -82,35 +117,37 @@ tr:nth-child(even){
 
 <div class="market-box">
 
-<div class="tabs">
-<span>US</span>
-<span>EUROPE</span>
-<span>ASIA</span>
-<span>FX</span>
-<span>RATES</span>
-<span>FUTURES</span>
+    <div class="tabs">
+        <div class="tab active">US</div>
+        <div class="tab">EUROPE</div>
+        <div class="tab">ASIA</div>
+        <div class="tab">FX</div>
+        <div class="tab">RATES</div>
+        <div class="tab">FUTURES</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th>MARKET</th>
+                <th>PRICE</th>
+                <th>CHANGE</th>
+                <th>% CHANGE</th>
+            </tr>
+        </thead>
+
+        <tbody id="marketData">
+            <tr>
+                <td colspan="5">Loading Market Data...</td>
+            </tr>
+        </tbody>
+    </table>
+
 </div>
 
-<table>
-
-<thead>
-<tr>
-<th></th>
-<th>MARKET</th>
-<th>PRICE</th>
-<th>CHANGE</th>
-<th>% CHG</th>
-</tr>
-</thead>
-
-<tbody id="marketData">
-<tr>
-<td colspan="5">Loading...</td>
-</tr>
-</tbody>
-
-</table>
-
+<div class="status-bar" id="lastUpdate">
+    Connecting...
 </div>
 
 <script>
@@ -118,19 +155,21 @@ tr:nth-child(even){
 const API_KEY = "d9h3de1r01qhv00kjgf0d9h3de1r01qhv00kjgfg";
 
 const markets = [
-  { name:"Dow", symbol:"DIA" },
-  { name:"S&P 500", symbol:"SPY" },
-  { name:"Nasdaq", symbol:"QQQ" },
-  { name:"Gold", symbol:"GLD" },
-  { name:"Silver", symbol:"SLV" },
-  { name:"Oil", symbol:"USO" }
+
+    { name:"Dow", symbol:"DIA" },
+    { name:"S&P 500", symbol:"SPY" },
+    { name:"Nasdaq", symbol:"QQQ" },
+    { name:"Gold", symbol:"GLD" },
+    { name:"Silver", symbol:"SLV" },
+    { name:"Oil", symbol:"USO" }
+
 ];
 
 async function updateMarkets(){
 
     const tbody = document.getElementById("marketData");
 
-    tbody.innerHTML="";
+    tbody.innerHTML = "";
 
     for(const market of markets){
 
@@ -142,43 +181,52 @@ async function updateMarkets(){
 
             const data = await response.json();
 
-            const positive = data.d >= 0;
+            const positive = Number(data.d) >= 0;
+
+            const arrow = positive ? "▲" : "▼";
 
             tbody.innerHTML += `
-            <tr>
-                <td class="${positive?'up':'down'}">
-                    ${positive?'↑':'↓'}
-                </td>
+                <tr>
 
-                <td>
-                    ${market.name}
-                </td>
+                    <td class="${positive ? 'up':'down'}">
+                        ${arrow}
+                    </td>
 
-                <td class="right">
-                    ${Number(data.c).toFixed(2)}
-                </td>
+                    <td class="market-name">
+                        ${market.name}
+                    </td>
 
-                <td class="right ${positive?'up':'down'}">
-                    ${Number(data.d).toFixed(2)}
-                </td>
+                    <td class="right">
+                        ${Number(data.c).toFixed(2)}
+                    </td>
 
-                <td class="right ${positive?'up':'down'}">
-                    ${Number(data.dp).toFixed(2)}%
-                </td>
-            </tr>`;
-        }
+                    <td class="right ${positive ? 'up':'down'}">
+                        ${Number(data.d).toFixed(2)}
+                    </td>
 
-        catch(err){
+                    <td class="right ${positive ? 'up':'down'}">
+                        ${Number(data.dp).toFixed(2)}%
+                    </td>
 
-            console.error(err);
+                </tr>
+            `;
+
+        } catch(err){
+
+            console.log(err);
 
         }
     }
+
+    document.getElementById("lastUpdate").innerHTML =
+        "Last Updated: " +
+        new Date().toLocaleTimeString();
+
 }
 
 updateMarkets();
 
-setInterval(updateMarkets,15000);
+setInterval(updateMarkets, 15000);
 
 </script>
 
