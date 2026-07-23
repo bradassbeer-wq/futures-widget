@@ -17,7 +17,7 @@
 body{
     background:#0d1117;
     color:#e6edf3;
-    font-family:Segoe UI,Arial,sans-serif;
+    font-family:'Segoe UI',sans-serif;
     overflow-x:hidden;
 }
 
@@ -37,12 +37,12 @@ body{
 
 .tab{
     color:#8b949e;
-    font-size:20px;
+    font-size:22px;
     font-weight:600;
 }
 
 .active{
-    color:white;
+    color:#ffffff;
     border-bottom:3px solid #58a6ff;
     padding-bottom:8px;
 }
@@ -57,9 +57,9 @@ thead{
 }
 
 th{
-    padding:18px;
+    padding:20px;
     text-align:right;
-    font-size:18px;
+    font-size:20px;
     color:#8b949e;
     border-bottom:1px solid #30363d;
 }
@@ -70,8 +70,8 @@ th:nth-child(2){
 }
 
 td{
-    padding:22px 18px;
-    font-size:28px;
+    padding:24px 20px;
+    font-size:32px;
     border-bottom:1px solid #21262d;
     transition:
         color .3s ease,
@@ -101,16 +101,16 @@ tr:hover{
 }
 
 .flash-up{
-    animation:flashUp .6s;
+    animation:flashUp .7s;
 }
 
 .flash-down{
-    animation:flashDown .6s;
+    animation:flashDown .7s;
 }
 
 @keyframes flashUp{
     from{
-        background:#3fb95066;
+        background:#3fb95044;
     }
     to{
         background:transparent;
@@ -119,7 +119,7 @@ tr:hover{
 
 @keyframes flashDown{
     from{
-        background:#f8514966;
+        background:#f8514944;
     }
     to{
         background:transparent;
@@ -128,9 +128,9 @@ tr:hover{
 
 .status-bar{
     position:fixed;
-    bottom:0;
     left:0;
     right:0;
+    bottom:0;
     background:#0d1117;
     border-top:1px solid #30363d;
     padding:12px 20px;
@@ -179,17 +179,15 @@ Connecting...
 
 <script>
 
-const API_KEY = "d9h3de1r01qhv00kjgf0d9h3de1r01qhv00kjgfg";
+const API_KEY = "REPLACE_WITH_YOUR_NEW_FINNHUB_KEY";
 
 const markets = [
-
     { id:"dow",    name:"Dow",     symbol:"DIA" },
     { id:"spx",    name:"S&P 500", symbol:"SPY" },
     { id:"nasdaq", name:"Nasdaq",  symbol:"QQQ" },
     { id:"gold",   name:"Gold",    symbol:"GLD" },
     { id:"silver", name:"Silver",  symbol:"SLV" },
     { id:"oil",    name:"Oil",     symbol:"USO" }
-
 ];
 
 const tbody = document.getElementById("marketData");
@@ -198,9 +196,9 @@ function createRows(){
 
     markets.forEach(market=>{
 
-        const row = document.createElement("tr");
+        const row=document.createElement("tr");
 
-        row.innerHTML = `
+        row.innerHTML=`
             <td id="${market.id}-arrow">-</td>
             <td class="market-name">${market.name}</td>
             <td class="right" id="${market.id}-price">--</td>
@@ -214,30 +212,29 @@ function createRows(){
 
 }
 
-function flashPrice(cell,newValue){
+function flashPrice(cell,newPrice){
 
-    const previous =
-        parseFloat(cell.textContent);
+    const oldPrice=parseFloat(cell.textContent);
 
-    if(!isNaN(previous)){
+    if(!isNaN(oldPrice)){
 
-        if(newValue > previous){
+        if(newPrice>oldPrice){
 
             cell.classList.add("flash-up");
 
             setTimeout(()=>{
                 cell.classList.remove("flash-up");
-            },600);
+            },700);
 
         }
 
-        if(newValue < previous){
+        if(newPrice<oldPrice){
 
             cell.classList.add("flash-down");
 
             setTimeout(()=>{
                 cell.classList.remove("flash-down");
-            },600);
+            },700);
 
         }
     }
@@ -249,13 +246,11 @@ async function updateMarkets(){
 
         try{
 
-            const response =
-                await fetch(
-                    `https://finnhub.io/api/v1/quote?symbol=${market.symbol}&token=${API_KEY}`
-                );
+            const response = await fetch(
+                `https://finnhub.io/api/v1/quote?symbol=${market.symbol}&token=${API_KEY}`
+            );
 
-            const data =
-                await response.json();
+            const data = await response.json();
 
             const price =
                 Number(data.c);
@@ -286,7 +281,7 @@ async function updateMarkets(){
 
             flashPrice(priceCell,price);
 
-            arrowCell.innerHTML =
+            arrowCell.textContent =
                 positive ? "▲" : "▼";
 
             arrowCell.className =
@@ -294,6 +289,9 @@ async function updateMarkets(){
 
             priceCell.textContent =
                 price.toFixed(2);
+
+            priceCell.className =
+                `right ${color}`;
 
             changeCell.textContent =
                 change.toFixed(2);
@@ -308,9 +306,9 @@ async function updateMarkets(){
                 `right ${color}`;
 
         }
-        catch(err){
+        catch(error){
 
-            console.log(err);
+            console.error(error);
 
         }
     }
@@ -326,10 +324,10 @@ async function updateMarkets(){
 }
 
 createRows();
-
 updateMarkets();
 
-setInterval(updateMarkets,10000);
+// Refresh every 5 seconds
+setInterval(updateMarkets,5000);
 
 </script>
 
