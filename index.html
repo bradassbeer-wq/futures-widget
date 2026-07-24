@@ -16,32 +16,33 @@
 
 body{
     background:#0d1117;
-    color:#fff;
-    font-family:Arial,Helvetica,sans-serif;
+    color:#ffffff;
+    font-family:Segoe UI,Arial,sans-serif;
 }
 
 .header{
-    padding:20px;
-    font-size:36px;
-    font-weight:bold;
+    padding:24px;
+    font-size:48px;
+    font-weight:700;
 }
 
 .tabs{
     display:flex;
-    gap:25px;
-    padding:0 20px;
+    gap:30px;
+    padding:0 24px;
     border-bottom:1px solid #30363d;
 }
 
 .tab{
-    padding:15px 0;
+    padding:14px 0;
     cursor:pointer;
     color:#8b949e;
-    font-weight:bold;
+    font-size:22px;
+    font-weight:600;
 }
 
 .tab.active{
-    color:#fff;
+    color:white;
     border-bottom:3px solid #58a6ff;
 }
 
@@ -55,9 +56,9 @@ thead{
 }
 
 th{
-    padding:15px;
     color:#8b949e;
-    font-size:15px;
+    padding:16px;
+    font-size:16px;
     text-align:right;
 }
 
@@ -67,31 +68,34 @@ th:nth-child(2){
 }
 
 td{
-    padding:18px;
-    font-size:24px;
+    padding:22px 16px;
+    font-size:22px;
     border-top:1px solid #21262d;
 }
 
 .market{
-    font-weight:bold;
-}
-
-.right{
-    text-align:right;
+    font-weight:700;
 }
 
 .arrow{
     width:40px;
 }
 
+.right{
+    text-align:right;
+}
+
 .up{
     color:#00c853;
-    font-weight:500;
 }
 
 .down{
     color:#ff5252;
-    font-weight:500;
+}
+
+.change-col,
+.pct-col{
+    font-weight:600;
 }
 
 .status{
@@ -99,16 +103,10 @@ td{
     bottom:0;
     left:0;
     right:0;
+    padding:10px 20px;
     background:#161b22;
     border-top:1px solid #30363d;
-    padding:10px 20px;
     color:#8b949e;
-}
-
-.change-col,
-.pct-col{
-    font-size:22px;
-    font-weight:500;
 }
 
 </style>
@@ -121,13 +119,15 @@ Market Dashboard
 </div>
 
 <div class="tabs">
+
     <div class="tab active" id="tab-us">
         US
     </div>
 
-    <div class="tab" id="tab-futures">
-        FUTURES
+    <div class="tab" id="tab-tracking">
+        TRACKING ETFs
     </div>
+
 </div>
 
 <table>
@@ -136,8 +136,7 @@ Market Dashboard
 <tr>
     <th></th>
     <th>MARKET</th>
-    <th>INDEX EST.</th>
-    <th>ETF</th>
+    <th>PRICE</th>
     <th>CHANGE</th>
     <th>% CHG</th>
 </tr>
@@ -148,7 +147,7 @@ Market Dashboard
 
 </table>
 
-<div class="status" id="lastUpdate">
+<div id="lastUpdate" class="status">
 Connecting...
 </div>
 
@@ -161,22 +160,81 @@ const datasets = {
 
 us:[
 
-{id:"dow",name:"Dow",symbol:"DIA",multiplier:100},
-{id:"spx",name:"S&P 500",symbol:"SPY",multiplier:10},
-{id:"nasdaq",name:"Nasdaq",symbol:"QQQ",multiplier:36},
-{id:"gold",name:"Gold",symbol:"GLD",multiplier:10.9},
-{id:"silver",name:"Silver",symbol:"SLV",multiplier:0.37},
-{id:"oil",name:"Oil",symbol:"USO",multiplier:0.66}
+{
+id:"dia",
+name:"Dow ETF (DIA)",
+symbol:"DIA"
+},
+
+{
+id:"spy",
+name:"S&P 500 ETF (SPY)",
+symbol:"SPY"
+},
+
+{
+id:"qqq",
+name:"Nasdaq ETF (QQQ)",
+symbol:"QQQ"
+},
+
+{
+id:"gld",
+name:"Gold ETF (GLD)",
+symbol:"GLD"
+},
+
+{
+id:"slv",
+name:"Silver ETF (SLV)",
+symbol:"SLV"
+},
+
+{
+id:"uso",
+name:"Oil ETF (USO)",
+symbol:"USO"
+}
 
 ],
 
-futures:[
+tracking:[
 
-{id:"es",name:"S&P Futures",symbol:"SPY",multiplier:10},
-{id:"nq",name:"Nasdaq Futures",symbol:"QQQ",multiplier:36},
-{id:"ym",name:"Dow Futures",symbol:"DIA",multiplier:100},
-{id:"gc",name:"Gold Futures",symbol:"GLD",multiplier:10.9},
-{id:"cl",name:"Oil Futures",symbol:"USO",multiplier:0.66}
+{
+id:"spy2",
+name:"SPDR S&P 500 ETF",
+symbol:"SPY"
+},
+
+{
+id:"qqq2",
+name:"Invesco QQQ ETF",
+symbol:"QQQ"
+},
+
+{
+id:"dia2",
+name:"SPDR Dow ETF",
+symbol:"DIA"
+},
+
+{
+id:"gld2",
+name:"SPDR Gold ETF",
+symbol:"GLD"
+},
+
+{
+id:"slv2",
+name:"iShares Silver ETF",
+symbol:"SLV"
+},
+
+{
+id:"uso2",
+name:"United States Oil ETF",
+symbol:"USO"
+}
 
 ]
 
@@ -189,9 +247,9 @@ document.getElementById("marketData");
 
 function buildTable(){
 
-    tbody.innerHTML="";
+    tbody.innerHTML = "";
 
-    datasets[currentTab].forEach(market=>{
+    datasets[currentTab].forEach(market => {
 
         const row =
         document.createElement("tr");
@@ -207,12 +265,7 @@ function buildTable(){
             </td>
 
             <td class="right"
-                id="${market.id}-index">
-                --
-            </td>
-
-            <td class="right"
-                id="${market.id}-etf">
+                id="${market.id}-price">
                 --
             </td>
 
@@ -256,25 +309,17 @@ async function updateMarkets(){
                 continue;
             }
 
-            const etfPrice =
+            const price =
             Number(data.c);
 
-            const indexValue =
-            etfPrice *
-            market.multiplier;
-
-            const etfChange =
+            const change =
             Number(data.d);
-
-            const indexChange =
-            etfChange *
-            market.multiplier;
 
             const pct =
             Number(data.dp);
 
             const positive =
-            indexChange >= 0;
+            change >= 0;
 
             const color =
             positive ? "up" : "down";
@@ -290,36 +335,20 @@ async function updateMarkets(){
             `arrow ${color}`;
 
             document.getElementById(
-            `${market.id}-index`
+            `${market.id}-price`
             ).textContent =
-            indexValue.toLocaleString(
-                undefined,
-                {
-                    minimumFractionDigits:2,
-                    maximumFractionDigits:2
-                }
-            );
+            price.toFixed(2);
 
             document.getElementById(
-            `${market.id}-index`
-            ).className =
-            "right";
-
-            document.getElementById(
-            `${market.id}-etf`
-            ).textContent =
-            etfPrice.toFixed(2);
-
-            document.getElementById(
-            `${market.id}-etf`
+            `${market.id}-price`
             ).className =
             "right";
 
             document.getElementById(
             `${market.id}-change`
             ).textContent =
-            (indexChange > 0 ? "+" : "") +
-            indexChange.toFixed(2);
+            (change > 0 ? "+" : "") +
+            change.toFixed(2);
 
             document.getElementById(
             `${market.id}-change`
@@ -343,7 +372,6 @@ async function updateMarkets(){
             console.log(err);
 
         }
-
     }
 
     document.getElementById(
@@ -381,10 +409,10 @@ document
 );
 
 document
-.getElementById("tab-futures")
+.getElementById("tab-tracking")
 .addEventListener(
 "click",
-()=>switchTab("futures")
+()=>switchTab("tracking")
 );
 
 buildTable();
@@ -392,7 +420,7 @@ updateMarkets();
 
 setInterval(
 updateMarkets,
-25000
+5000
 );
 
 </script>
